@@ -1,5 +1,3 @@
-Aqui tens a versão do README.md em inglês, adaptada ao teu estilo técnico e direto, perfeita para o teu repositório no GitHub:
-
 🚀 Mission Control Simulator
 A hardcore space mission management simulator focused on systemic realism and reactive feedback. Built entirely with native web technologies (Vanilla JS, HTML5 Canvas, and Web Audio API).
 
