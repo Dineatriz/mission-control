@@ -8,17 +8,21 @@ function getCtx() {
 }
 
 function playBeep(freq, duration, type = 'sine', vol = 0.3) {
-    const c = getCtx();
-    const osc = c.createOscillator();
-    const gain = c.createGain();
-    osc.connect(gain);
-    gain.connect(c.destination);
-    osc.type = type;
-    osc.frequency.setValueAtTime(freq, c.currentTime);
-    gain.gain.setValueAtTime(vol, c.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, c.currentTime + duration);
-    osc.start(c.currentTime);
-    osc.stop(c.currentTime + duration);
+    try {
+        const c = getCtx();
+        const osc = c.createOscillator();
+        const gain = c.createGain();
+        osc.connect(gain);
+        gain.connect(c.destination);
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, c.currentTime);
+        gain.gain.setValueAtTime(vol, c.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, c.currentTime + duration);
+        osc.start(c.currentTime);
+        osc.stop(c.currentTime + duration);
+    } catch (e) {
+        console.warn('Audio failed:', e.message);
+    }
 }
 
 let alarmInterval = null;
@@ -121,6 +125,7 @@ const state = {
     },
     playstyle: 'safe',
     streak: 0,
+    tutorialDone: false,
 };
 
 const EVENTS = {
@@ -162,7 +167,7 @@ const EVENTS = {
             id: 'gyro_fail',
             icon: '🌀',
             title: 'GYROSCOPE FAILURE',
-            desc: 'Attitude control unsstable. Craft drifting off trajectory.',
+            desc: 'Attitude control unstable. Craft drifting off trajectory.',
             choices: [
                 { text: 'Manual attitude correction', cost: 'FUEL -12', apply: (r) => { r.fuel -= 12; } },
                 { text: 'Reboot guidance computer', cost: 'POWER -18', apply: (r) => { r.power -= 18; } },
@@ -266,7 +271,7 @@ const EVENTS = {
         {
             id: 'landing_gear',
             icon: '🛬',
-            title: 'LANDING GEAR MALFUNCTION',
+            title: 'LANDING GEAR FAILURE',
             desc: 'Port landing strut failed to deploy. Manual override required.',
             choices: [
                 { text: 'Force deploy -structural risk', cost: 'POWER -15', apply: (r) => { r.power -= 15; } },
@@ -310,7 +315,7 @@ const NARRATIVES = [
     'Engines at full thrust. All systems nominal. Beginning ascent sequence.',
     'Stable orbit achieved. Running systems check. Enjoying the view.',
     'Anomalies detected. Crew on high alert. Mission control monitoring.',
-    'Deorbit burn complete. Entering atmosphere. Heat shield hoolding.',
+    'Deorbit burn complete. Entering atmosphere. Heat shield holding.',
 ];
 
 const bootMessages = [
@@ -623,7 +628,7 @@ function resolveChoice(choice) {
 
     const resourcesTotal = state.resources.fuel + state.resources.power + state.resources.oxygen;
     state.score += Math.floor((resourcesTotal / 3 + streakBonus) * mult);
-    choice.apply(state.resources);
+    if (choice.apply) choice.apply(state.resources);
 
     Object.keys(state.resources).forEach(k => {
         state.resources[k] = Math.max(0, Math.min(100, state.resources[k]));
@@ -1343,7 +1348,7 @@ function checkConditionalEvents() {
     if (state.flags.engineDamaged && phase === 'LANDING' && !state.conditionalsFired.includes('engine_fail_landing')) {
         state.conditionalsFired.push('engine_fail_landing');
         return {
-            id: 'engine_fail-landing',
+            id: 'engine_fail_landing',
             icon: '🔥',
             title: 'ENGINE FAILURE - FINAL APPROACH',
             desc: 'The damaged engine from earlier has given out. Descent uncontrolled.',
@@ -1421,6 +1426,7 @@ function applyPlayStyle() {
 }
 
 function initGame() {
+    console.log('Mission Control loaded OK');
     state.conditionalsFired = [];
     state.score = 0;
     state.decisions = 0;
@@ -1452,7 +1458,114 @@ function initGame() {
     };
 
     state.streak = 0;
+
+    if (!state.tutorialDone) {
+        startTutorialUI();
+    }
 }
+
+const tutorialSteps = [
+    {
+        text: "These are your resources. If any hits zero, you lose.",
+        highlight: '.panel-telemetry'
+    },
+    {
+        text: "Events will appear here. You must choose quickly.",
+        highlight: '#event-box'
+    },
+    {
+        text: "Each choice has consequences. Some come later.",
+        highlight: '#choices',
+    },
+    {
+        text: "Good luck, Commander.",
+        highlight: null
+    }
+];
+
+let tutorialStep = 0;
+
+function startTutorialUI() {
+    tutorialStep = 0;
+    $('tutorial-overlay').classList.remove('hidden');
+    showTutorialStep();
+}
+
+function showTutorialStep() {
+    const step = tutorialSteps[tutorialStep];
+    $('tutorial-text').textContent = step.text;
+
+    document.querySelectorAll('.tutorial-highlight').forEach(el => {
+        el.classList.remove('tutorial-highlight');
+    });
+
+    if (step.highlight) {
+        const el = document.querySelector(step.highlight);
+        if (el) el.classList.add('tutorial-highlight');
+    }
+}
+
+$('tutorial-next').addEventListener('click', () => {
+    tutorialStep++;
+
+    if(tutorialStep >= tutorialSteps.length) {
+        $('tutorial-overlay').classList.add('hidden');
+        state.tutorialDone = true;
+        return;
+    }
+
+    showTutorialStep();
+});
+
+const TUTORIAL_EVENT_1 = {
+    id: 'tutorial_1',
+    icon: '📘',
+    title: 'MISSION BRIEFING',
+    desc: 'Resources decrease over time. Every decision matters. Choose wisely.',
+    choices: [
+        {
+            text: 'Continue',
+            cost: '',
+            apply: () => {
+                triggerEvent(TUTORIAL_EVENT_2);
+            }
+        }
+    ]
+};
+
+const TUTORIAL_EVENT_2 = {
+    id: 'tutorial_2',
+    icon: '⚠️',
+    title: 'DECISION MAKING',
+    desc: 'Each choice consumes resources or affects your ship. Some decisions have future consequences.',
+    choices: [
+        {
+            text: 'Got it',
+            cost: '',
+            apply: () => {
+                triggerEvent(TUTORIAL_EVENT_3);
+            }
+        }
+    ]
+};
+
+const TUTORIAL_EVENT_3 = {
+    id: 'tutorial_3',
+    icon: '⏳',
+    title: 'TIME PRESSURE',
+    desc: 'You have limited time to respond. If you do nothing, the worst option will be chosen.',
+    choices: [
+        {
+            text: 'Start Mission',
+            cost: '',
+            apply: () => {
+                state.tutorialDone = true;
+                $('event-box').classList.add('hidden');
+                scheduleNextEvent();
+            }
+        }
+    ]
+};
 
 window.addEventListener('DOMContentLoaded', () => {
     showScreen('screen-boot');
