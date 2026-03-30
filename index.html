@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+        <title>Mission Control</title>
+        <link rel="stylesheet" href="style.css" />
+        <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet"/>
+    </head>
+    <body>
+        <div id="app">
+
+            <div id="screen-boot" class="screen active">
+                <div class="boot-content">
+                    <div class="nasa-logo">⬡</div>
+                    <h1>MISSION CONTROL</h1>
+                    <p class="subtitle">APOLLO COMMAND SYSTEM v4.2</p>
+                    <div class="boot-lines" id="boot-lines"></div>
+                    <button id="btn-start" class="hidden">INITIATE MISSION</button>
+                </div>
+            </div>
+
+            <div id="screen-playstyle" class="screen">
+                <div class="playstyle-content">
+                    <h2 class="playstyle-title">SELECT COMMANDER PROFILE</h2>
+                    <p class="playstyle-sub">Your choice affects resources, risk, and events.</p>
+                    <div class="playstyle-cards">
+                        <div class="playstyle-card" data-style="aggressive">
+                            <div class="ps-icon">⚡</div>
+                            <div class="ps-name">AGGRESSIVE PILOT</div>
+                            <div class="ps-desc">High velocity, high risk. More fuel, less power. Rare bonus events.</div>
+                            <div class="ps-stats">FUEL +20 | POWER -10 | SPEED +15%</div>
+                        </div>
+                        <div class="playstyle-card" data-style="safe">
+                            <div class="ps-icon">🛡️</div>
+                            <div class="ps-name">SAFE COMMANDER</div>
+                            <div class="ps-desc">Cautious approach. Better oxygen reserves. Fewer critical events.</div>
+                            <div class="ps-stats">OXYGEN +20 | FUEL -10 | RISK -20%</div>
+                        </div>
+                        <div class="playstyle-card" data-style="engineer">
+                            <div class="ps-icon">🔧</div>
+                            <div class="ps-name">CHIEF ENGINEER</div>
+                            <div class="ps-desc">Systems expert. Repairs cost less power. Better integrity.</div>
+                            <div class="ps-stats">POWER +20 | INTEGRITY +20 | REPAIR -30%</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="screen-game" class="screen">
+
+                <header class="hud-top">
+                    <div class="hud-block">
+                        <span class="hud-label">PHASE</span>
+                        <span class="hud-value" id="hud-phase">-</span>
+                    </div>
+                    <div class="hud-block center">
+                        <span class="hud-label">MISSION ELAPSED TIME</span>
+                        <span class="hud-value" id="hud-time">T+00:00:00</span>
+                    </div>
+                    <div class="hud-block right">
+                        <span class="hud-label">STATUS</span>
+                        <span class="hud-value" id="hud-status">NOMINAL</span>
+                    </div>
+                </header>
+
+                <div class="main-grid">
+
+                    <aside class="panel panel-telemetry">
+                        <div class="panel-title">TELEMETRY</div>
+                        <div class="telemetry-row">
+                            <span class="t-label">ALTITUDE</span>
+                            <span class="t-value" id="tel-altitude">0 km</span>
+                        </div>
+                        <div class="telemetry-row">
+                            <span class="t-label">VELOCITY</span>
+                            <span class="t-value" id="tel-velocity">0 m/s</span>
+                        </div>
+                        <div class="telemetry-row">
+                            <span class="t-label">TEMP</span>
+                            <span class="t-value" id="tel-temp">22°C</span>
+                        </div>
+                        <div class="telemetry-row">
+                            <span class="t-label">SIGNAL</span>
+                            <span class="t-value" id="tel-signal">STRONG</span>
+                        </div>
+                        <div class="telemetry-row">
+                            <span class="t-label">THRUST</span>
+                            <span class="t-value" id="tel-thrust">100%</span>
+                        </div>
+                        <div class="telemetry-row">
+                            <span class="t-label">INTEGRITY</span>
+                            <span class="t-value" id="tel-integrity"></span>
+                        </div>
+                        <div class="telemetry-row">
+                            <span class="t-label">G-FORCE</span>
+                            <span class="t-value" id="tel-gforce">1.0 g</span>
+                        </div>
+                        <div class="telemetry-row">
+                            <span class="t-label">ORBIT</span>
+                            <span class="t-value" id="tel-orbit">---</span>
+                        </div>
+                        <div class="telemetry-row">
+                            <span class="t-label">ETA</span>
+                            <span class="t-value" id="tel-eta">--:--</span>
+                        </div>
+
+                        <div class="panel-title" style="margin-top:24px">RESOURCES</div>
+                        <div class="resource-bar-wrap">
+                            <div class="resource-label-row"><span>FUEL</span><span id="res-fuel-val">100%</span></div>
+                            <div class="bar-bg"><div class="bar-fill fuel" id="bar-fuel"></div></div>
+                        </div>
+                        <div class="resource-bar-wrap">
+                            <div class="resource-label-row"><span>POWER</span><span id="res-power-val">100%</span></div>
+                            <div class="bar-bg"><div class="bar-fill power" id="bar-power"></div></div>
+                        </div>
+                        <div class="resource-bar-wrap">
+                            <div class="resource-label-row"><span>OXYGEN</span><span id="res-oxygen-val">100%</span></div>
+                            <div class="bar-bg"><div class="bar-fill oxygen" id="bar-oxygen"></div></div>
+                        </div>
+                    </aside>
+
+                    <main class="panel panel-main">
+                        <div class="phase-header">
+                        <span id="phase-text" class="phase-text-label">—</span>
+                        </div>
+                    <canvas id="mission-canvas" class="mission-canvas"></canvas>
+                        <div id="event-box" class="event-box hidden">
+                            <div class="event-icon" id="event-icon">▲</div>
+                            <div class="event-title" id="event-title">EVENT</div>
+                            <div class="event-desc" id="event-desc"></div>
+                            <div class="countdown-wrap">
+                                <div class="countdown-bar" id="countdown-bar"></div>
+                            </div>
+                            <div class="choices" id="choices"></div>
+                        </div>
+                        <div id="narrative-box" class="narrative-box">
+                            <div id="narrative-text"></div>
+                        </div>
+                    </main>
+
+                    <aside class="panel panel-log">
+                        <div class="panel-title">MISSION LOG</div>
+                        <div id="log-list" class="log-list"></div>
+                    </aside>
+                </div>
+            </div>
+
+            <div id="screen-end" class="screen">
+                <div class="end-content">
+                    <div class="end-icon" id="end-icon">-</div>
+                    <h2 id="end-title">-</h2>
+                    <p id="end-desc">-</p>
+                    <button id="btn-restart">RESTART MISSION</button>
+                </div>
+            </div>
+
+        </div>
+        <script src="game.js"></script>
+    </body>
+</html>
